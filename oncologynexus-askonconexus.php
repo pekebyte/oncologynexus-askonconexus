@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       OncologyNexus Ask
+ * Plugin Name:       OncologyNexus - Ask Onconexus
  * Plugin URI:        https://oncologynexus.com/
  * Description:       Retrieval-augmented generation (RAG) assistant for the headless Next.js frontend. Indexes every published piece of site content, retrieves the most relevant passages with hybrid dense + lexical search, and answers questions through OpenAI, Anthropic Claude or Google Gemini with inline citations.
  * Version:           1.0.0

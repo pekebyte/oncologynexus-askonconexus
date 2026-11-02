@@ -502,7 +502,7 @@ class OncologyNexus_Ask_Retriever {
 			}
 
 			if ( strlen( $header ) + strlen( $content ) > $remaining ) {
-				$content = mb_substr( $content, 0, max( 0, $remaining - strlen( $header ) - 20 ) ) . '…';
+				$content = mb_strcut( $content, 0, max( 0, $remaining - strlen( $header ) - 20 ), 'UTF-8' ) . '…';
 			}
 
 			$context .= ( '' === $context ? '' : "\n\n" ) . $header . $content;

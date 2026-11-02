@@ -203,7 +203,8 @@ class OncologyNexus_Ask_Embeddings {
 	private function gemini_embed( array $texts, $key, array $config ) {
 		$base  = $this->normalize_base( 'gemini', $this->settings->get( 'gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta' ) );
 		$model = $this->normalize_gemini_model( $config['model'] );
-		$url   = add_query_arg( 'key', $key, $base . '/models/' . rawurlencode( $model ) . ':batchEmbedContents' );
+		$url   = $base . '/models/' . rawurlencode( $model ) . ':batchEmbedContents';
+		$auth  = array( 'x-goog-api-key' => $key );
 
 		$requests = array();
 		foreach ( $texts as $text ) {
@@ -219,7 +220,7 @@ class OncologyNexus_Ask_Embeddings {
 			$requests[] = $request;
 		}
 
-		$data = OncologyNexus_Ask_HTTP::post_json( $url, array( 'requests' => $requests ), array(), 60 );
+		$data = OncologyNexus_Ask_HTTP::post_json( $url, array( 'requests' => $requests ), $auth, 60 );
 
 		if ( is_wp_error( $data ) && $config['dimensions'] > 0 ) {
 			$message = $data->get_error_message();
@@ -228,7 +229,7 @@ class OncologyNexus_Ask_Embeddings {
 					unset( $request['outputDimensionality'] );
 				}
 				unset( $request );
-				$data = OncologyNexus_Ask_HTTP::post_json( $url, array( 'requests' => $requests ), array(), 60 );
+				$data = OncologyNexus_Ask_HTTP::post_json( $url, array( 'requests' => $requests ), $auth, 60 );
 			}
 		}
 
@@ -275,7 +276,7 @@ class OncologyNexus_Ask_Embeddings {
 	 * @return float[]|WP_Error
 	 */
 	private function gemini_embed_one( $text, $key, $base, $model, array $config ) {
-		$url  = add_query_arg( 'key', $key, $base . '/models/' . rawurlencode( $model ) . ':embedContent' );
+		$url  = $base . '/models/' . rawurlencode( $model ) . ':embedContent';
 		$body = array(
 			'content' => array(
 				'parts' => array( array( 'text' => (string) $text ) ),
@@ -285,7 +286,7 @@ class OncologyNexus_Ask_Embeddings {
 			$body['outputDimensionality'] = (int) $config['dimensions'];
 		}
 
-		$data = OncologyNexus_Ask_HTTP::post_json( $url, $body, array(), 60 );
+		$data = OncologyNexus_Ask_HTTP::post_json( $url, $body, array( 'x-goog-api-key' => $key ), 60 );
 		if ( is_wp_error( $data ) ) {
 			return $data;
 		}
@@ -478,7 +479,7 @@ class OncologyNexus_Ask_Embeddings {
 			);
 		} else {
 			$base = $this->normalize_base( 'gemini', $this->settings->get( 'gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta' ) );
-			$data = OncologyNexus_Ask_HTTP::get_json( add_query_arg( 'key', $key, $base . '/models' ), array(), 20 );
+			$data = OncologyNexus_Ask_HTTP::get_json( $base . '/models', array( 'x-goog-api-key' => $key ), 20 );
 		}
 
 		if ( is_wp_error( $data ) ) {

@@ -243,9 +243,15 @@ The ask endpoint is public because the static frontend has no server, so it is p
 - **Global daily request ceiling** (default 1,000) as a cost guard.
 - **Question and history bounds** (length, message count, sanitisation).
 - **Hashed IPs** in logs — raw addresses are never stored.
-- **Server-side API keys** — keys never leave WordPress.
+- **Server-side API keys** — keys never leave WordPress. Provider calls send them in request headers (`Authorization`, `x-api-key`, `x-goog-api-key`), never in URLs.
 - **Prompt-injection hardening** — retrieved text is explicitly treated as untrusted.
 - Administrators bypass the per-IP limit; the admin playground also skips the origin check.
+
+### Where keys are stored
+
+Keys can be defined in `wp-config.php` (recommended) or saved from the admin screen. They are stored in the `onx_ask_settings` option, which is **not autoloaded** and is never exposed by a REST endpoint. The admin form re-renders only the last four characters, and a blank field keeps the existing key.
+
+WordPress has no built-in secret encryption: values saved in the database are plaintext at rest. Protect them by keeping `wp-config.php` outside version control and restricting database/backup access. If you need encryption at rest, define the keys as constants and keep the database free of secrets.
 
 CORS headers are added only for the `oncologynexus/v1/ask*` routes, including `OPTIONS` preflight support.
 

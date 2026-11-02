@@ -241,7 +241,7 @@ class OncologyNexus_Ask_LLM {
 	private function gemini_complete( $system, array $messages, array $args, $key ) {
 		$base  = $this->normalize_base( 'gemini', $this->settings->get( 'gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta' ) );
 		$model = preg_replace( '#^models/#', '', (string) $args['model'] );
-		$url   = add_query_arg( 'key', $key, $base . '/models/' . rawurlencode( $model ) . ':generateContent' );
+		$url   = $base . '/models/' . rawurlencode( $model ) . ':generateContent';
 
 		$contents = array();
 		foreach ( $this->alternate_messages( $messages ) as $message ) {
@@ -284,7 +284,7 @@ class OncologyNexus_Ask_LLM {
 			),
 		);
 
-		$data = OncologyNexus_Ask_HTTP::post_json( $url, $payload, array(), (int) $args['timeout'], 1 );
+		$data = OncologyNexus_Ask_HTTP::post_json( $url, $payload, array( 'x-goog-api-key' => $key ), (int) $args['timeout'], 1 );
 
 		if ( is_wp_error( $data ) ) {
 			return $data;
@@ -447,7 +447,7 @@ class OncologyNexus_Ask_LLM {
 			);
 		} else {
 			$base = $this->normalize_base( 'gemini', $this->settings->get( 'gemini_base_url', 'https://generativelanguage.googleapis.com/v1beta' ) );
-			$data = OncologyNexus_Ask_HTTP::get_json( add_query_arg( 'key', $key, $base . '/models' ), array(), 20 );
+			$data = OncologyNexus_Ask_HTTP::get_json( $base . '/models', array( 'x-goog-api-key' => $key ), 20 );
 		}
 
 		if ( is_wp_error( $data ) ) {

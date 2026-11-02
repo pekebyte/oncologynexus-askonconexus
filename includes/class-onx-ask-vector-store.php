@@ -111,7 +111,8 @@ class OncologyNexus_Ask_Vector_Store {
 
 		dbDelta( $sql );
 
-		update_option( 'onx_ask_db_version', ONX_ASK_DB_VERSION, false );
+		// Autoloaded so the per-request version guard never issues a query.
+		update_option( 'onx_ask_db_version', ONX_ASK_DB_VERSION, true );
 	}
 
 	/**

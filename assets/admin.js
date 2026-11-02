@@ -67,6 +67,8 @@
 			return;
 		}
 
+		payload = payload && typeof payload === 'object' ? payload : {};
+
 		container.innerHTML = '';
 		container.hidden = false;
 
