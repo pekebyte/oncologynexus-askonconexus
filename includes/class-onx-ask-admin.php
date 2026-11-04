@@ -76,8 +76,13 @@ class OncologyNexus_Ask_Admin {
 			return;
 		}
 
-		wp_enqueue_style( 'onx-ask-admin', ONX_ASK_URL . 'assets/admin.css', array(), ONX_ASK_VERSION );
-		wp_enqueue_script( 'onx-ask-admin', ONX_ASK_URL . 'assets/admin.js', array(), ONX_ASK_VERSION, true );
+		$css_file = ONX_ASK_DIR . 'assets/admin.css';
+		$js_file  = ONX_ASK_DIR . 'assets/admin.js';
+		$css_ver  = ONX_ASK_VERSION . '.' . ( file_exists( $css_file ) ? filemtime( $css_file ) : '0' );
+		$js_ver   = ONX_ASK_VERSION . '.' . ( file_exists( $js_file ) ? filemtime( $js_file ) : '0' );
+
+		wp_enqueue_style( 'onx-ask-admin', ONX_ASK_URL . 'assets/admin.css', array(), $css_ver );
+		wp_enqueue_script( 'onx-ask-admin', ONX_ASK_URL . 'assets/admin.js', array(), $js_ver, true );
 		wp_localize_script(
 			'onx-ask-admin',
 			'OnxAskAdmin',
