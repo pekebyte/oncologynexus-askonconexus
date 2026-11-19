@@ -71,6 +71,21 @@ class OncologyNexus_Ask_REST {
 				'callback'            => array( $this, 'handle_ask' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
+					'ask_session_id' => array(
+						'type' => 'string',
+						'pattern' => '^[A-Za-z0-9_-]{16,128}$',
+					),
+					'mode' => array(
+						'type' => 'string',
+						'enum' => array( 'general', 'article' ),
+						'default' => 'general',
+					),
+					'page' => array(
+						'type' => 'object',
+						'properties' => array(
+							'post_id' => array( 'type' => 'integer', 'minimum' => 1 ),
+						),
+					),
 					'question'    => array(
 						'required' => true,
 						'type'     => 'string',
@@ -224,10 +239,29 @@ class OncologyNexus_Ask_REST {
 			}
 		}
 
+		// The browser sends only an opaque ID. History expires after 20 idle
+		// minutes and is isolated by client, session and article scope.
+		$page = (array) $request->get_param( 'page' );
+		$post_id = 'article' === $request->get_param( 'mode' ) && isset( $page['post_id'] ) ? absint( $page['post_id'] ) : 0;
+		if ( 'article' === $request->get_param( 'mode' ) ) {
+			$post = $post_id ? get_post( $post_id ) : null;
+			if ( ! $post || 'publish' !== $post->post_status || ! empty( $post->post_password ) || ! in_array( $post->post_type, $this->settings->post_types(), true ) ) {
+				return $this->error_response( new WP_Error( 'onx_ask_invalid_page', 'This article is not available to the assistant.', array( 'status' => 400 ) ) );
+			}
+		}
+		$session_id = (string) $request->get_param( 'ask_session_id' );
+		$session_key = '' !== $session_id ? 'onx_ask_s_' . hash( 'sha256', $this->security->ip_hash() . '|' . $session_id . '|' . $post_id ) : '';
+		$session = $session_key ? get_transient( $session_key ) : false;
+		$session = is_array( $session ) ? $session : array( 'history' => array(), 'turns' => 0 );
+		if ( $session_key && $session['turns'] >= 10 ) {
+			return $this->error_response( new WP_Error( 'onx_ask_session_limit', 'Please start a new chat to ask more questions.', array( 'status' => 429 ) ) );
+		}
+
 		$result = $this->service->ask(
 			array(
 				'question'     => $request->get_param( 'question' ),
-				'conversation' => $request->get_param( 'conversation' ),
+				'conversation' => $session_key ? $session['history'] : $request->get_param( 'conversation' ),
+				'post_id'      => $post_id,
 				'post_types'   => $request->get_param( 'post_types' ),
 				'session_id'   => $request->get_param( 'session_id' ),
 			)
@@ -235,6 +269,14 @@ class OncologyNexus_Ask_REST {
 
 		if ( is_wp_error( $result ) ) {
 			return $this->error_response( $result );
+		}
+
+		if ( $session_key && isset( $result['answer'] ) ) {
+			$session['history'][] = array( 'role' => 'user', 'content' => $request->get_param( 'question' ) );
+			$session['history'][] = array( 'role' => 'assistant', 'content' => $result['answer'] );
+			$session['history'] = $this->security->sanitize_history( $session['history'] );
+			++$session['turns'];
+			set_transient( $session_key, $session, 20 * MINUTE_IN_SECONDS );
 		}
 
 		$response = rest_ensure_response( $result );

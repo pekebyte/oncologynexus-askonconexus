@@ -128,7 +128,7 @@ Namespace: `/wp-json/oncologynexus/v1/`
 
 | Method | Route | Description |
 | --- | --- | --- |
-| `POST` | `/ask` | Ask a question. Body: `question` (required), `conversation` (optional array of `{role, content}`), `post_types` (optional array), `session_id` (optional). |
+| `POST` | `/ask` | Ask a question. Body: `question` (required), `conversation` (optional array of `{role, content}`), `post_types` (optional array), `ask_session_id` (optional opaque ID), `mode` (`general` or `article`), `page.post_id` (required in article mode). |
 | `GET` | `/ask/status` | Enabled / configured / index readiness, counts, provider names, suggestions, disclaimer. |
 | `GET` | `/ask/suggestions` | Starter questions and disclaimer. |
 
@@ -288,19 +288,44 @@ Useful filters:
 
 ## Frontend integration
 
-The Next.js app ships with:
-
-- `src/lib/ask.js` — typed-ish client helpers (`askQuestion`, `getAskStatus`, `getAskSuggestions`, error mapping).
-- `src/components/ask/AskWidget.js` — floating assistant available on every page.
-- `src/app/ask/page.js` — dedicated full-page assistant.
-
-Enable it with:
+The existing **Ask OncoIntelligence AI** launcher and chat window in
+`src/components/ask/` call this plugin directly from the browser. The app remains
+a static Next.js export; no Next.js API route or provider key is needed.
 
 ```env
 NEXT_PUBLIC_ASK_ENABLED=true
+NEXT_PUBLIC_WORDPRESS_API_URL=https://cms.example.com/wp-json
+# Optional override for a different WordPress Ask endpoint:
+# NEXT_PUBLIC_ASK_API_URL=https://cms.example.com/wp-json/oncologynexus/v1/ask
 ```
 
-The widget calls the WordPress REST endpoint directly from the browser. Send `Cache-Control: no-cache` on status requests because some WordPress REST cache plugins cache public `GET` responses.
+Activate and configure the plugin, reindex the content, and add the frontend's
+origin (including the port in development) to **Allowed origins** in WordPress.
+Rebuild/redeploy the frontend after changing public environment variables.
+
+The browser sends `{ ask_session_id, question, mode, page }` where `mode` is
+`general` or `article` and `page.post_id` identifies the current article, video or
+podcast. Article mode restricts retrieval to that published, unprotected post;
+its ID is also included in answer cache keys. General mode searches the library.
+
+An opaque session ID identifies server-side history, scoped by hashed client IP
+and article. History expires after 20 idle minutes and retains at most eight
+messages; each session permits ten successful questions. New chat, closing the
+window, navigation and idle expiry start a fresh frontend session. The browser
+does not upload conversation history. Legacy callers may continue sending
+`conversation` without `ask_session_id`.
+
+The plugin returns JSON when generation finishes. The frontend adapts `answer`,
+`sources` and `follow_up_questions` to its chat events and also supports SSE from
+an optional alternative endpoint. Source links use frontend paths and retain
+the plugin's citation numbers and content type labels. Provider credentials stay
+in WordPress.
+
+Local mock answers require `NEXT_PUBLIC_ASK_MOCK=true`; they are disabled by
+default. Placeholder ads require `NEXT_PUBLIC_ASK_AD_PLACEHOLDERS=true`.
+
+Run `npm run test:ask` in the frontend directory to verify the adapter, request
+contract, errors, source links, streaming compatibility and cancellation.
 
 ---
 

@@ -348,6 +348,7 @@ class OncologyNexus_Ask_Vector_Store {
 			$args,
 			array(
 				'post_types' => array(),
+				'post_id'    => 0,
 				'limit'      => 5000,
 				'offset'     => 0,
 			)
@@ -363,6 +364,10 @@ class OncologyNexus_Ask_Vector_Store {
 				INNER JOIN {$docs} d ON d.post_id = c.post_id
 				WHERE 1=1";
 		$params = array();
+		if ( ! empty( $args['post_id'] ) ) {
+			$sql .= ' AND c.post_id = %d';
+			$params[] = absint( $args['post_id'] );
+		}
 
 		$types = array_filter( array_map( 'sanitize_key', (array) $args['post_types'] ) );
 		if ( ! empty( $types ) ) {
