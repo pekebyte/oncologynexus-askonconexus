@@ -72,6 +72,8 @@ class OncologyNexus_Ask_Service {
 		$history    = $this->security->sanitize_history( isset( $params['conversation'] ) ? $params['conversation'] : array() );
 		$post_types = $this->security->sanitize_post_types( isset( $params['post_types'] ) ? $params['post_types'] : array() );
 
+		$post_id = isset( $params['post_id'] ) ? absint( $params['post_id'] ) : 0;
+
 		$rate = $this->security->check_rate_limit();
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
@@ -97,9 +99,10 @@ class OncologyNexus_Ask_Service {
 			$search_query,
 			array(
 				'post_types'     => $post_types,
+				'post_id'        => $post_id,
 				'context_chunks' => (int) $this->settings->get( 'context_chunks', 8 ),
 				'top_k'          => (int) $this->settings->get( 'top_k', 40 ),
-				'max_per_doc'    => (int) $this->settings->get( 'max_per_doc', 2 ),
+				'max_per_doc'    => $post_id ? (int) $this->settings->get( 'context_chunks', 8 ) : (int) $this->settings->get( 'max_per_doc', 2 ),
 			)
 		);
 
@@ -110,9 +113,10 @@ class OncologyNexus_Ask_Service {
 				$question,
 				array(
 					'post_types'     => $post_types,
+					'post_id'        => $post_id,
 					'context_chunks' => (int) $this->settings->get( 'context_chunks', 8 ),
 					'top_k'          => (int) $this->settings->get( 'top_k', 40 ),
-					'max_per_doc'    => (int) $this->settings->get( 'max_per_doc', 2 ),
+					'max_per_doc'    => $post_id ? (int) $this->settings->get( 'context_chunks', 8 ) : (int) $this->settings->get( 'max_per_doc', 2 ),
 				)
 			);
 		}
@@ -154,6 +158,7 @@ class OncologyNexus_Ask_Service {
 						'q'       => $question,
 						'history' => $history,
 						'types'   => $post_types,
+						'post_id' => $post_id,
 						'search'  => $search_query,
 						'index'   => $index_version,
 						'chat'    => $this->settings->chat_config(),

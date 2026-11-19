@@ -138,6 +138,7 @@ class OncologyNexus_Ask_Retriever {
 			$args,
 			array(
 				'post_types'     => array(),
+				'post_id'        => 0,
 				'top_k'          => (int) $this->settings->get( 'top_k', 40 ),
 				'context_chunks' => (int) $this->settings->get( 'context_chunks', 8 ),
 				'max_per_doc'    => (int) $this->settings->get( 'max_per_doc', 2 ),
@@ -158,6 +159,7 @@ class OncologyNexus_Ask_Retriever {
 		$chunks = $this->store->get_chunks(
 			array(
 				'post_types' => (array) $args['post_types'],
+				'post_id'    => (int) $args['post_id'],
 				'limit'      => $max_scan,
 			)
 		);
@@ -169,6 +171,11 @@ class OncologyNexus_Ask_Retriever {
 		 * @param string                         $query  Query.
 		 */
 		$chunks = apply_filters( 'onx_ask_candidate_chunks', $chunks, $query );
+		if ( ! empty( $args['post_id'] ) ) {
+			$chunks = array_values( array_filter( $chunks, static function ( $chunk ) use ( $args ) {
+				return (int) $chunk['post_id'] === (int) $args['post_id'];
+			} ) );
+		}
 
 		if ( empty( $chunks ) ) {
 			return array();
